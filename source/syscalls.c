@@ -1,8 +1,5 @@
 #include "syscalls.h"
 
-// Code below is adapted from @modexpblog. Read linked article for more details.
-// https://www.mdsec.co.uk/2020/12/bypassing-user-mode-hooks-and-direct-invocation-of-system-calls-for-red-teams
-
 #if defined(_MSC_VER)
 #if defined(BOF)
 #pragma data_seg(".data")
@@ -16,13 +13,7 @@ SW2_SYSCALL_LIST SW2_SyscallList __attribute__ ((section(".data")));
 #elif defined(__GNUC__)
 SW2_SYSCALL_LIST SW2_SyscallList;
 #endif
-/*
- * If no 'syscall' instruction is found in NTDLL,
- * this function will be called.
- * By default just returns STATUS_NOT_FOUND.
- * The idea is to avoid having a 'syscall' instruction
- * on this program's .text section to evade static analysis
- */
+
 #if defined(_MSC_VER) && defined (_M_IX86)
 
 __declspec(naked) void SyscallNotFound(void)
@@ -235,7 +226,7 @@ EXTERN_C DWORD SW2_GetSyscallNumber(
 {
     if (!SW2_PopulateSyscallList())
     {
-        DPRINT_ERR("SW2_PopulateSyscallList failed");
+        
         return 0;
     }
 
@@ -246,7 +237,7 @@ EXTERN_C DWORD SW2_GetSyscallNumber(
             return i;
         }
     }
-    DPRINT_ERR("syscall with hash 0x%lx not found", FunctionHash);
+    
     return 0;
 }
 
@@ -255,7 +246,7 @@ EXTERN_C PVOID SW3_GetSyscallAddress(
 {
     if (!SW2_PopulateSyscallList())
     {
-        DPRINT_ERR("SW2_PopulateSyscallList failed");
+        
         return NULL;
     }
 
@@ -266,7 +257,7 @@ EXTERN_C PVOID SW3_GetSyscallAddress(
             return SW2_SyscallList.Entries[i].SyscallAddress;
         }
     }
-    DPRINT_ERR("syscall with hash 0x%lx not found", FunctionHash);
+    
     return NULL;
 }
 

